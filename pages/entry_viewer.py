@@ -3,8 +3,8 @@ import pandas as pd
 from datetime import datetime, timedelta
 from streamlit_calendar import calendar
 from google_sheets_helper import sheet, get_sections, get_fields_for_section, get_entries_for_section
-from dateutil.parser import parse
 from google_calendar_helper import create_google_calendar_event
+from dateutil.parser import parse
 
 st.set_page_config(page_title="Entry Viewer", layout="wide")
 st.title("📋 View and Manage Entries")
@@ -52,38 +52,27 @@ if selected_section:
             st.markdown(f"### 🔹 {entry_title}")
             entry_df = pd.DataFrame([row.values], columns=row.index)
             st.table(entry_df)
+
             cols = st.columns([1, 1, 1])
             if cols[0].button("✏️ Edit", key=f"edit_{i}"):
                 st.session_state["edit_row"] = row.to_dict()
                 st.session_state["edit_index"] = i
                 st.rerun()
             if cols[1].button("🗑️ Delete", key=f"delete_{i}"):
-                worksheet.delete_rows(i + 2)  # +2 for 1-indexing and header row
+                worksheet.delete_rows(i + 2)  # +2 for header + 0-indexed
                 st.success("Deleted!")
                 st.rerun()
+
+            # Reminder with Google Calendar integration
             if cols[2].button("🔔 Reminder", key=f"remind_{i}"):
-                if selected_date_field and pd.notnull(row[selected_date_field]):
-                    reminder_time = pd.to_datetime(row[selected_date_field])
-                    link = create_google_calendar_event(
-                        service_account_info={
-                            "type": "service_account",
-                            "project_id": "tracker-app-463507",
-                            "private_key_id": "...",
-                            "private_key": "...",
-                            "client_email": "...",
-                            "client_id": "...",
-                            "auth_uri": "...",
-                            "token_uri": "...",
-                            "auth_provider_x509_cert_url": "...",
-                            "client_x509_cert_url": "..."
-                        },
-                        title=row.get("Exam Name", "Job Reminder"),
-                        description=f"Reminder for {row.get('Exam Name', 'Job')}",
-                        start_datetime=reminder_time
-                    )
-                    st.success(f"✅ Reminder added to Google Calendar. [View Event]({link})")
-                else:
-                    st.warning("⚠️ No valid date found for reminder.")
+                with st.modal(f"📅 Set Reminder for: {entry_title}"):
+                    reminder_date = st.date_input("Reminder Date", datetime.today())
+                    reminder_time = st.time_input("Reminder Time", datetime.now().time())
+                    if st.button("✅ Add to Google Calendar"):
+                        dt = datetime.combine(reminder_date, reminder_time)
+                        event_link = create_google_calendar_event(entry_title, dt)
+                        st.success("📆 Reminder added to Google Calendar!")
+                        st.markdown(f"[📎 View Event]({event_link})")
 
         # Calendar View
         st.markdown("---")
@@ -109,11 +98,11 @@ if selected_section:
             )
 
             events = []
-            if "Title" in df.columns and selected_date_field != "None":
+            if selected_date_field != "None":
                 for _, row in df.iterrows():
                     try:
                         date = parse(str(row[selected_date_field]))
-                        title = row["Title"] if "Title" in row else "Task"
+                        title = row.get("Title") or row.get("Exam Name") or "Task"
                         events.append({
                             "title": title,
                             "start": date.strftime("%Y-%m-%d"),
