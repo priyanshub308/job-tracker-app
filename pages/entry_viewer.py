@@ -47,19 +47,19 @@ if selected_section:
         st.subheader("📌 Entries")
 
         for i, row in df.iterrows():
-            with st.expander(f"🔹 Entry {i+1}: {row.get('Title', 'Untitled')}"):
-                for col in df.columns:
-                    st.write(f"**{col}**: {row[col]}")
-                edit_col, delete_col, remind_col = st.columns([1, 1, 1])
-                if edit_col.button("✏️ Edit", key=f"edit_{i}"):
+            label = str(row.iloc[0]) if not pd.isna(row.iloc[0]) else f"Entry {i+1}"
+            with st.expander(f"🔹 {label}"):
+                st.write(row.to_dict())
+                cols = st.columns([1, 1, 1])
+                if cols[0].button("✏️ Edit", key=f"edit_{i}"):
                     st.session_state["edit_row"] = row.to_dict()
                     st.session_state["edit_index"] = i
                     st.rerun()
-                if delete_col.button("🗑️ Delete", key=f"delete_{i}"):
+                if cols[1].button("🗑️ Delete", key=f"delete_{i}"):
                     worksheet.delete_rows(i + 2)
                     st.success("Deleted!")
                     st.rerun()
-                remind_col.button("🔔 Reminder", key=f"remind_{i}")
+                cols[2].button("🔔 Reminder", key=f"remind_{i}")
 
         # Calendar View
         st.markdown("---")
@@ -89,7 +89,7 @@ if selected_section:
                 for _, row in df.iterrows():
                     try:
                         date = parse(str(row[selected_date_field]))
-                        title = row["Title"] if "Title" in row else "Task"
+                        title = row["Title"] if "Title" in row else str(row.iloc[0])
                         events.append({
                             "title": title,
                             "start": date.strftime("%Y-%m-%d"),
