@@ -122,4 +122,29 @@ if selected_section:
                     "initialView": "dayGridMonth",
                     "height": "600px",
                     "headerToolbar": {
-                        "left": "prev,next
+                        "left": "prev,next today",
+                        "center": "title",
+                        "right": "dayGridMonth,timeGridWeek,timeGridDay"
+                    }
+                }
+            )
+
+        # Multisection overview
+        if st.checkbox("📂 Show all sections combined"):
+            combined = []
+            for sec in section_names:
+                try:
+                    sec_data = sheet.worksheet(sec).get_all_records()
+                    for d in sec_data:
+                        d["Section"] = sec
+                        combined.append(d)
+                except:
+                    continue
+            if combined:
+                df_combined = pd.DataFrame(combined)
+                st.dataframe(df_combined)
+                st.download_button("⬇️ Download CSV", data=df_combined.to_csv(index=False), file_name="combined_data.csv", mime="text/csv")
+            else:
+                st.info("No data found in other sections.")
+    else:
+        st.info("No entries in this section.")
