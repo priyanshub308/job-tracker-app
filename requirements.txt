@@ -3,3 +3,4 @@ streamlit
 gspread
 oauth2client
 streamlit-extras
+streamlit-calendar
