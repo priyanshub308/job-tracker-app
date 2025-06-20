@@ -120,7 +120,38 @@ else:
             except:
                 continue
 
-        calendar(events=events, options={"initialView": "dayGridMonth"})
+        with st.container():
+            st.markdown(
+                """
+                <style>
+                .fc {
+                    font-size: 14px;
+                }
+                .fc .fc-toolbar-title {
+                    font-size: 20px;
+                }
+                .fc-scroller {
+                    overflow-y: auto;
+                    max-height: 600px;
+                }
+                </style>
+                """,
+                unsafe_allow_html=True
+            )
+        
+            calendar(
+                events=events,
+                options={
+                    "initialView": "dayGridMonth",
+                    "height": "600px",
+                    "headerToolbar": {
+                        "left": "prev,next today",
+                        "center": "title",
+                        "right": "dayGridMonth,timeGridWeek,timeGridDay"
+                    }
+                }
+            )
+
 
     # Multisection overview
     if st.checkbox("📂 Show all sections combined"):
