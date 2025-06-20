@@ -1,6 +1,10 @@
 
 streamlit
+pandas
+streamlit-calendar
+google-auth
+google-auth-oauthlib
+google-api-python-client
 gspread
 oauth2client
-streamlit-extras
-streamlit-calendar
+python-dateutil
