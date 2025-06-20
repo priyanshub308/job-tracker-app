@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime
 from streamlit_calendar import calendar
 from google_sheets_helper import sheet, get_sections, get_fields_for_section, get_entries_for_section
 from google_calendar_helper import create_google_calendar_event
@@ -58,13 +58,17 @@ if selected_section:
                 st.session_state["edit_row"] = row.to_dict()
                 st.session_state["edit_index"] = i
                 st.rerun()
+
             if cols[1].button("🗑️ Delete", key=f"delete_{i}"):
-                worksheet.delete_rows(i + 2)  # +2 for header + 0-indexed
+                worksheet.delete_rows(i + 2)  # +2 for header + 0-indexing
                 st.success("Deleted!")
                 st.rerun()
 
-            # Reminder with Google Calendar integration
             if cols[2].button("🔔 Reminder", key=f"remind_{i}"):
+                st.session_state["reminder_index"] = i
+
+            # Show reminder section if this is the active one
+            if st.session_state.get("reminder_index") == i:
                 with st.expander(f"📅 Set Reminder for: {entry_title}", expanded=True):
                     reminder_date = st.date_input("Reminder Date", datetime.today(), key=f"date_{i}")
                     reminder_time = st.time_input("Reminder Time", datetime.now().time(), key=f"time_{i}")
@@ -73,7 +77,7 @@ if selected_section:
                         event_link = create_google_calendar_event(entry_title, dt)
                         st.success("📆 Reminder added to Google Calendar!")
                         st.markdown(f"[📎 View Event]({event_link})", unsafe_allow_html=True)
-
+                        del st.session_state["reminder_index"]
 
         # Calendar View
         st.markdown("---")
@@ -118,29 +122,4 @@ if selected_section:
                     "initialView": "dayGridMonth",
                     "height": "600px",
                     "headerToolbar": {
-                        "left": "prev,next today",
-                        "center": "title",
-                        "right": "dayGridMonth,timeGridWeek,timeGridDay"
-                    }
-                }
-            )
-
-        # Multisection overview
-        if st.checkbox("📂 Show all sections combined"):
-            combined = []
-            for sec in section_names:
-                try:
-                    sec_data = sheet.worksheet(sec).get_all_records()
-                    for d in sec_data:
-                        d["Section"] = sec
-                        combined.append(d)
-                except:
-                    continue
-            if combined:
-                df_combined = pd.DataFrame(combined)
-                st.dataframe(df_combined)
-                st.download_button("⬇️ Download CSV", data=df_combined.to_csv(index=False), file_name="combined_data.csv", mime="text/csv")
-            else:
-                st.info("No data found in other sections.")
-    else:
-        st.info("No entries in this section.")
+                        "left": "prev,next
