@@ -47,19 +47,20 @@ if selected_section:
         st.subheader("📌 Entries")
 
         for i, row in df.iterrows():
-            label = str(row.iloc[0]) if not pd.isna(row.iloc[0]) else f"Entry {i+1}"
-            with st.expander(f"🔹 {label}"):
-                st.write(row.to_dict())
-                cols = st.columns([1, 1, 1])
-                if cols[0].button("✏️ Edit", key=f"edit_{i}"):
-                    st.session_state["edit_row"] = row.to_dict()
-                    st.session_state["edit_index"] = i
-                    st.rerun()
-                if cols[1].button("🗑️ Delete", key=f"delete_{i}"):
-                    worksheet.delete_rows(i + 2)
-                    st.success("Deleted!")
-                    st.rerun()
-                cols[2].button("🔔 Reminder", key=f"remind_{i}")
+            entry_title = row.get("Exam Name") or row.get("Title") or f"Entry {i+1}"
+            st.markdown(f"### 🔹 {entry_title}")
+            entry_df = pd.DataFrame([row.values], columns=row.index)
+            st.table(entry_df)
+            cols = st.columns([1, 1, 1])
+            if cols[0].button("✏️ Edit", key=f"edit_{i}"):
+                st.session_state["edit_row"] = row.to_dict()
+                st.session_state["edit_index"] = i
+                st.rerun()
+            if cols[1].button("🗑️ Delete", key=f"delete_{i}"):
+                worksheet.delete_rows(i + 2)  # +2 for 1-indexing and header row
+                st.success("Deleted!")
+                st.rerun()
+            cols[2].button("🔔 Reminder", key=f"remind_{i}")
 
         # Calendar View
         st.markdown("---")
@@ -89,7 +90,7 @@ if selected_section:
                 for _, row in df.iterrows():
                     try:
                         date = parse(str(row[selected_date_field]))
-                        title = row["Title"] if "Title" in row else str(row.iloc[0])
+                        title = row["Title"] if "Title" in row else "Task"
                         events.append({
                             "title": title,
                             "start": date.strftime("%Y-%m-%d"),
