@@ -17,7 +17,7 @@ def get_sections():
 def get_fields_for_section(section):
     try:
         ws = sheet.worksheet(section)
-        return ws.row_values(1)[1:]  # Ignore first column (timestamp or ID)
+        return ws.row_values(1)  # Ignore first column (timestamp or ID)
     except:
         return []
 
