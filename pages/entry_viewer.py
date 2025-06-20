@@ -47,29 +47,19 @@ if selected_section:
         st.subheader("📌 Entries")
 
         for i, row in df.iterrows():
-            if st.session_state.get("edit_index") == i:
-                with st.form(f"edit_form_{i}"):
-                    new_values = {}
-                    for col in df.columns:
-                        new_values[col] = st.text_input(col, value=str(row[col]))
-                    submitted = st.form_submit_button("💾 Save")
-                    if submitted:
-                        worksheet.update(f"A{i + 2}:{chr(65 + len(new_values) - 1)}{i + 2}", [list(new_values.values())])
-                        st.success("Entry updated successfully!")
-                        st.session_state.pop("edit_index")
-                        st.rerun()
-            else:
-                cols = st.columns([3, 1, 1, 1])
-                with cols[0]:
-                    st.write(row.to_dict())
-                if cols[1].button("✏️ Edit", key=f"edit_{i}"):
+            with st.expander(f"🔹 Entry {i+1}: {row.get('Title', 'Untitled')}"):
+                for col in df.columns:
+                    st.write(f"**{col}**: {row[col]}")
+                edit_col, delete_col, remind_col = st.columns([1, 1, 1])
+                if edit_col.button("✏️ Edit", key=f"edit_{i}"):
+                    st.session_state["edit_row"] = row.to_dict()
                     st.session_state["edit_index"] = i
                     st.rerun()
-                if cols[2].button("🗑️ Delete", key=f"delete_{i}"):
+                if delete_col.button("🗑️ Delete", key=f"delete_{i}"):
                     worksheet.delete_rows(i + 2)
                     st.success("Deleted!")
                     st.rerun()
-                cols[3].button("🔔 Reminder", key=f"remind_{i}")
+                remind_col.button("🔔 Reminder", key=f"remind_{i}")
 
         # Calendar View
         st.markdown("---")
