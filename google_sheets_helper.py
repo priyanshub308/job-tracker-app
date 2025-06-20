@@ -34,3 +34,7 @@ def add_entry(section_name, entry_data):
     new_row = [entry_data.get(header, "") for header in headers]
 
     worksheet.append_row(new_row)
+    
+def get_entries_for_section(section_name):
+    worksheet = sheet.worksheet(section_name)
+    return worksheet.get_all_records()
