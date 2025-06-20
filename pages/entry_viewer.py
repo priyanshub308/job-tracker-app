@@ -57,12 +57,12 @@ else:
         if cols[1].button("✏️ Edit", key=f"edit_{i}"):
             st.session_state["edit_row"] = row.to_dict()
             st.session_state["edit_index"] = i
-            st.experimental_rerun()
+            st.rerun()
 
         if cols[2].button("🗑️ Delete", key=f"delete_{i}"):
             worksheet.delete_rows(i)
             st.success(f"Row {i} deleted.")
-            st.experimental_rerun()
+            st.rerun()
 
     # If editing
     if "edit_row" in st.session_state:
@@ -77,7 +77,7 @@ else:
             st.success("✅ Entry updated.")
             del st.session_state["edit_row"]
             del st.session_state["edit_index"]
-            st.experimental_rerun()
+            st.rerun()
 
     st.download_button(
         label="⬇️ Download as CSV",
