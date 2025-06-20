@@ -21,7 +21,16 @@ def get_fields_for_section(section):
     except:
         return []
 
-def add_entry(section, data_dict):
-    ws = sheet.worksheet(section)
-    values = [data_dict.get(field, "") for field in get_fields_for_section(section)]
-    ws.append_row([""] + values)
+# def add_entry(section, data_dict):
+#     ws = sheet.worksheet(section)
+#     values = [data_dict.get(field, "") for field in get_fields_for_section(section)]
+#     ws.append_row([""] + values)
+
+def add_entry(section_name, entry_data):
+    worksheet = sheet.worksheet(section_name)
+    headers = worksheet.row_values(1)
+
+    # Ensure correct order: use headers from sheet, not from entry_data.keys()
+    new_row = [entry_data.get(header, "") for header in headers]
+
+    worksheet.append_row(new_row)
