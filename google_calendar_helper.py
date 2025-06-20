@@ -5,8 +5,10 @@ from datetime import datetime, timedelta
 
 SCOPES = ["https://www.googleapis.com/auth/calendar"]
 
+# Replace with your personal calendar ID (email)
+CALENDAR_ID = "priyanshudbzmpr@gmail.com"
+
 def create_google_calendar_event(title, start_time):
-    # Load credentials from Streamlit secrets
     credentials = service_account.Credentials.from_service_account_info(
         st.secrets["gcp_service_account"], scopes=SCOPES
     )
@@ -22,5 +24,9 @@ def create_google_calendar_event(title, start_time):
         },
     }
 
-    event_result = service.events().insert(calendarId="primary", body=event).execute()
-    return event_result.get("htmlLink")
+    try:
+        event_result = service.events().insert(calendarId=CALENDAR_ID, body=event).execute()
+        return event_result.get("htmlLink")
+    except Exception as e:
+        st.error(f"❌ Failed to create calendar event: {e}")
+        return None
