@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from streamlit_calendar import calendar
 from google_sheets_helper import sheet, get_sections, get_fields_for_section, get_entries_for_section
 from dateutil.parser import parse
+from google_calendar_helper import create_google_calendar_event
 
 st.set_page_config(page_title="Entry Viewer", layout="wide")
 st.title("📋 View and Manage Entries")
@@ -61,20 +62,28 @@ if selected_section:
                 st.success("Deleted!")
                 st.rerun()
             if cols[2].button("🔔 Reminder", key=f"remind_{i}"):
-                st.session_state[f"reminder_set_{i}"] = True
-
-            if st.session_state.get(f"reminder_set_{i}", False):
-                reminder_date = st.date_input(f"⏰ Set reminder for this entry", key=f"reminder_date_{i}")
-                if st.button("💾 Save Reminder", key=f"save_reminder_{i}"):
-                    headers = worksheet.row_values(1)
-                    if "Reminder Date" not in headers:
-                        worksheet.update_cell(1, len(headers) + 1, "Reminder Date")
-                        headers.append("Reminder Date")
-                    col_index = headers.index("Reminder Date") + 1
-                    worksheet.update_cell(i + 2, col_index, reminder_date.strftime("%Y-%m-%d"))
-                    st.success("Reminder date saved!")
-                    st.session_state[f"reminder_set_{i}"] = False
-                    st.rerun()
+                if selected_date_field and pd.notnull(row[selected_date_field]):
+                    reminder_time = pd.to_datetime(row[selected_date_field])
+                    link = create_google_calendar_event(
+                        service_account_info={
+                            "type": "service_account",
+                            "project_id": "tracker-app-463507",
+                            "private_key_id": "...",
+                            "private_key": "...",
+                            "client_email": "...",
+                            "client_id": "...",
+                            "auth_uri": "...",
+                            "token_uri": "...",
+                            "auth_provider_x509_cert_url": "...",
+                            "client_x509_cert_url": "..."
+                        },
+                        title=row.get("Exam Name", "Job Reminder"),
+                        description=f"Reminder for {row.get('Exam Name', 'Job')}",
+                        start_datetime=reminder_time
+                    )
+                    st.success(f"✅ Reminder added to Google Calendar. [View Event]({link})")
+                else:
+                    st.warning("⚠️ No valid date found for reminder.")
 
         # Calendar View
         st.markdown("---")
