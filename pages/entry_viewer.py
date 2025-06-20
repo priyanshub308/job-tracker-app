@@ -120,7 +120,7 @@ else:
             except:
                 continue
 
-        calendar(events=events, options={"initialView": "dayGridMonth"}, height=600)
+        calendar(events=events, options={"initialView": "dayGridMonth"})
 
     # Multisection overview
     if st.checkbox("📂 Show all sections combined"):
