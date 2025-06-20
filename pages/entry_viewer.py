@@ -4,6 +4,8 @@ import pandas as pd
 from google_sheets_helper import sheet
 from datetime import datetime
 from dateutil.parser import parse
+from streamlit_calendar import calendar
+import requests
 
 st.set_page_config(page_title="Entry Viewer", layout="wide")
 st.title("📄 Entry Viewer — All Your Tracked Data")
@@ -56,7 +58,7 @@ else:
 
     # Display entries with edit/delete/reminder
     for i, row in df.iterrows():
-        cols = st.columns([6, 1, 1, 1])
+        cols = st.columns([6, 1, 1, 1, 1])
         cols[0].write(row.to_frame().T)
 
         if cols[1].button("✏️ Edit", key=f"edit_{i}"):
@@ -71,6 +73,17 @@ else:
 
         if cols[3].button("🔔 Remind", key=f"remind_{i}"):
             st.info("📬 Reminder feature coming soon (email or mobile notifications)")
+
+        if cols[4].button("🤖 Suggest", key=f"ai_{i}"):
+            try:
+                response = requests.post("http://localhost:11434/api/generate", json={
+                    "model": "mistral",
+                    "prompt": f"Suggest improvements or reminders for this task: {row.to_dict()}"
+                })
+                suggestion = response.json()['response']
+                st.success(suggestion)
+            except:
+                st.warning("⚠️ Couldn’t connect to Mistral API. Is your PC on and the model running?")
 
     # If editing
     if "edit_row" in st.session_state:
@@ -94,7 +107,22 @@ else:
         mime='text/csv'
     )
 
-    # Multisection overview (basic preview)
+    # 📅 Calendar View
+    if date_columns:
+        st.markdown("---")
+        st.subheader("📆 Calendar View")
+        events = []
+        for _, row in df.iterrows():
+            try:
+                date_val = parse(row[date_col], fuzzy=True)
+                title = row.get("ExamName") or row.get("Task") or row.get("Title") or "Task"
+                events.append({"title": title, "start": date_val.strftime('%Y-%m-%d')})
+            except:
+                continue
+
+        calendar(events=events, options={"initialView": "dayGridMonth"}, height=600)
+
+    # Multisection overview
     if st.checkbox("📂 Show all sections combined"):
         st.markdown("## 🔄 Combined Overview")
         combined_df = pd.DataFrame()
