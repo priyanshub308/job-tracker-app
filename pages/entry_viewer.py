@@ -3,6 +3,7 @@ import streamlit as st
 import pandas as pd
 from google_sheets_helper import sheet
 from datetime import datetime
+from dateutil.parser import parse
 
 st.set_page_config(page_title="Entry Viewer", layout="wide")
 st.title("📄 Entry Viewer — All Your Tracked Data")
@@ -20,38 +21,42 @@ else:
     df = pd.DataFrame(data[1:], columns=data[0])
     df.index += 2  # Offset for correct Google Sheets row numbers
 
+    # Convert reminder dates and filter
+    def try_parse_date(x):
+        try:
+            return parse(x, fuzzy=True)
+        except:
+            return pd.NaT
+
     st.markdown("### 📅 Optional: Filter by Date")
     date_columns = [col for col in df.columns if 'date' in col.lower()]
     if date_columns:
         date_col = st.selectbox("Select date field to filter:", date_columns)
-        try:
-            df[date_col] = pd.to_datetime(df[date_col], errors='coerce')
-            min_date, max_date = df[date_col].min(), df[date_col].max()
-            start_date, end_date = st.date_input("Date range:", (min_date, max_date))
-            df = df[(df[date_col] >= pd.to_datetime(start_date)) & (df[date_col] <= pd.to_datetime(end_date))]
-        except:
-            st.warning("⚠️ Couldn't parse date format in selected column.")
+        df[date_col] = df[date_col].apply(try_parse_date)
+        min_date, max_date = df[date_col].min(), df[date_col].max()
+        start_date, end_date = st.date_input("Date range:", (min_date, max_date))
+        df = df[(df[date_col] >= pd.to_datetime(start_date)) & (df[date_col] <= pd.to_datetime(end_date))]
 
-    # Filter dropdowns
-    st.markdown("### 🔍 Filter Entries")
-    filters = {}
-    for col in df.columns:
-        if col in date_columns:
-            continue
-        unique_vals = df[col].unique().tolist()
-        if len(unique_vals) < 50:
-            selected = st.multiselect(f"Filter by {col}", unique_vals, default=unique_vals)
-            filters[col] = selected
+    # Tag & Priority filtering
+    tag_col = next((col for col in df.columns if col.lower() == "tags"), None)
+    priority_col = next((col for col in df.columns if "priority" in col.lower()), None)
 
-    for col, allowed_vals in filters.items():
-        df = df[df[col].isin(allowed_vals)]
+    if tag_col:
+        tags = sorted(set(tag.strip() for val in df[tag_col].dropna() for tag in val.split(",")))
+        selected_tags = st.multiselect("🧩 Filter by tags", tags, default=tags)
+        df = df[df[tag_col].apply(lambda x: any(tag in x.split(",") for tag in selected_tags) if isinstance(x, str) else False)]
+
+    if priority_col:
+        priorities = df[priority_col].dropna().unique().tolist()
+        selected_priority = st.multiselect("🎯 Filter by priority", priorities, default=priorities)
+        df = df[df[priority_col].isin(selected_priority)]
 
     st.markdown("---")
     st.subheader(f"📊 Showing {len(df)} entries")
 
-    # Display with edit/delete buttons
+    # Display entries with edit/delete/reminder
     for i, row in df.iterrows():
-        cols = st.columns([6, 1, 1])
+        cols = st.columns([6, 1, 1, 1])
         cols[0].write(row.to_frame().T)
 
         if cols[1].button("✏️ Edit", key=f"edit_{i}"):
@@ -63,6 +68,9 @@ else:
             worksheet.delete_rows(i)
             st.success(f"Row {i} deleted.")
             st.rerun()
+
+        if cols[3].button("🔔 Remind", key=f"remind_{i}"):
+            st.info("📬 Reminder feature coming soon (email or mobile notifications)")
 
     # If editing
     if "edit_row" in st.session_state:
@@ -85,3 +93,16 @@ else:
         file_name=f"{selected_section}_entries.csv",
         mime='text/csv'
     )
+
+    # Multisection overview (basic preview)
+    if st.checkbox("📂 Show all sections combined"):
+        st.markdown("## 🔄 Combined Overview")
+        combined_df = pd.DataFrame()
+        for sec in sections:
+            ws = sheet.worksheet(sec)
+            d = ws.get_all_values()
+            if d and len(d) > 1:
+                subdf = pd.DataFrame(d[1:], columns=d[0])
+                subdf["Section"] = sec
+                combined_df = pd.concat([combined_df, subdf], ignore_index=True)
+        st.dataframe(combined_df)
