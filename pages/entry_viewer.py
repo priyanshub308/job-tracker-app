@@ -60,7 +60,21 @@ if selected_section:
                 worksheet.delete_rows(i + 2)  # +2 for 1-indexing and header row
                 st.success("Deleted!")
                 st.rerun()
-            cols[2].button("🔔 Reminder", key=f"remind_{i}")
+            if cols[2].button("🔔 Reminder", key=f"remind_{i}"):
+                st.session_state[f"reminder_set_{i}"] = True
+
+            if st.session_state.get(f"reminder_set_{i}", False):
+                reminder_date = st.date_input(f"⏰ Set reminder for this entry", key=f"reminder_date_{i}")
+                if st.button("💾 Save Reminder", key=f"save_reminder_{i}"):
+                    headers = worksheet.row_values(1)
+                    if "Reminder Date" not in headers:
+                        worksheet.update_cell(1, len(headers) + 1, "Reminder Date")
+                        headers.append("Reminder Date")
+                    col_index = headers.index("Reminder Date") + 1
+                    worksheet.update_cell(i + 2, col_index, reminder_date.strftime("%Y-%m-%d"))
+                    st.success("Reminder date saved!")
+                    st.session_state[f"reminder_set_{i}"] = False
+                    st.rerun()
 
         # Calendar View
         st.markdown("---")
