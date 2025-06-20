@@ -65,14 +65,15 @@ if selected_section:
 
             # Reminder with Google Calendar integration
             if cols[2].button("🔔 Reminder", key=f"remind_{i}"):
-                with st.modal(f"📅 Set Reminder for: {entry_title}"):
-                    reminder_date = st.date_input("Reminder Date", datetime.today())
-                    reminder_time = st.time_input("Reminder Time", datetime.now().time())
-                    if st.button("✅ Add to Google Calendar"):
+                with st.expander(f"📅 Set Reminder for: {entry_title}", expanded=True):
+                    reminder_date = st.date_input("Reminder Date", datetime.today(), key=f"date_{i}")
+                    reminder_time = st.time_input("Reminder Time", datetime.now().time(), key=f"time_{i}")
+                    if st.button("✅ Add to Google Calendar", key=f"add_reminder_{i}"):
                         dt = datetime.combine(reminder_date, reminder_time)
                         event_link = create_google_calendar_event(entry_title, dt)
                         st.success("📆 Reminder added to Google Calendar!")
-                        st.markdown(f"[📎 View Event]({event_link})")
+                        st.markdown(f"[📎 View Event]({event_link})", unsafe_allow_html=True)
+
 
         # Calendar View
         st.markdown("---")
